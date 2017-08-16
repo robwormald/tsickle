@@ -26,18 +26,22 @@ import * as variableTypingTransformer from '../src/variable_declaration_typing_t
 describe('transformer prototype', () => {
   it.only('adds a comment to variable declarations', () => {
     // Run tsickle+TSC to convert inputs to Closure JS files.
-    const {js, sourceMap} = compile(`let x : string = 'a string';`, variableTypingTransformer.transformer);
+    const {js, sourceMap} = compile(`/** @Annotation */
+function classAnnotation(t: any) { return t; }
+
+    @classAnnotation
+    class foo {}`, variableTypingTransformer.transformer);
 
     console.log(js);
-    sourceMapTextToConsumer(sourceMap).eachMapping((m) => console.log(JSON.stringify(m)));
+    // sourceMapTextToConsumer(sourceMap).eachMapping((m) => console.log(JSON.stringify(m)));
 
-    expect(js).to.not.be.null;
-    expect(js).to.contain('@type {?}');
+    expect(js).to.exist;
   });
 });
 
-const tscOptions = {
+const tscOptions: ts.CompilerOptions = {
   sourceMap: true,
+  experimentalDecorators: true,
 };
 
 function compile(file: string, transformer: ts.TransformerFactory<ts.SourceFile>): {js: string, sourceMap: string} {
@@ -59,7 +63,9 @@ function compile(file: string, transformer: ts.TransformerFactory<ts.SourceFile>
   {  // Scope for the "diagnostics" variable so we can use the name again later.
     const diagnostics = ts.getPreEmitDiagnostics(program);
     if (diagnostics.length > 0) {
-      return {js: '', sourceMap: ''};
+      console.error(tsickle.formatDiagnostics(diagnostics));
+      assert.fail(`couldn't create the program`);
+      throw new Error('unreachable');
     }
   }
 
@@ -69,7 +75,9 @@ function compile(file: string, transformer: ts.TransformerFactory<ts.SourceFile>
         ]
     });
   if (diagnostics.length > 0) {
-    return {js: '', sourceMap: ''};
+      console.error(tsickle.formatDiagnostics(diagnostics));
+      assert.fail(`emit failed`);
+      throw new Error('unreachable');
   }
 
   const js = getFileWithName('input.js', jsFiles) || '';
