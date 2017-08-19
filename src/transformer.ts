@@ -17,6 +17,7 @@ import {containsInlineSourceMap, extractInlineSourceMap, parseSourceMap, removeI
 import {createTransformerFromSourceMap} from './transformer_sourcemap';
 import {createCustomTransformers} from './transformer_util';
 import * as tsickle from './tsickle';
+import * as variableTypingTransformer from '../src/variable_declaration_typing_transformer';
 
 export interface TransformerOptions extends es5processor.Es5ProcessorOptions, tsickle.Options {
   /**
@@ -90,6 +91,7 @@ export function emitWithTsickle(
       tsickleDiagnostics.push(...diagnostics);
       return output;
     }));
+    beforeTsTransformers.push(variableTypingTransformer.transformer);
   } else if (options.transformDecorators) {
     beforeTsTransformers.push(createTransformerFromSourceMap((sourceFile, sourceMapper) => {
       const {output, diagnostics} =
@@ -97,6 +99,7 @@ export function emitWithTsickle(
       tsickleDiagnostics.push(...diagnostics);
       return output;
     }));
+    beforeTsTransformers.push(variableTypingTransformer.transformer);
   }
   // // For debugging: transformer that just emits the same text.
   // beforeTsTransformers.push(createTransformer(host, typeChecker, (sourceFile, sourceMapper) => {

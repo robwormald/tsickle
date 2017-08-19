@@ -133,7 +133,8 @@ function sortDiagnostics(diagnostics: string): string {
 }
 
 // Only run golden tests if we filter for a specific one.
-const testFn = TEST_FILTER ? describe.only : describe;
+// const testFn = TEST_FILTER ? describe.only : describe;
+const testFn = describe.only;
 
 testFn('golden tests with transformer', () => {
   testSupport.goldenTests().forEach((test) => {

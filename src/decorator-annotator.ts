@@ -240,12 +240,12 @@ export class DecoratorClassVisitor {
   emitMetadataAsStaticProperties() {
     const decoratorInvocations = '{type: Function, args?: any[]}[]';
     if (this.decorators) {
-      this.rewriter.emit(`static decorators: ${decoratorInvocations} = [\n`);
-      for (const annotation of this.decorators) {
-        this.emitDecorator(annotation);
-        this.rewriter.emit(',\n');
-      }
-      this.rewriter.emit('];\n');
+      // this.rewriter.emit(`static decorators: ${decoratorInvocations} = [\n`);
+      // for (const annotation of this.decorators) {
+      //   this.emitDecorator(annotation);
+      //   this.rewriter.emit(',\n');
+      // }
+      // this.rewriter.emit('];\n');
     }
 
     if (this.decorators || this.ctorParameters) {

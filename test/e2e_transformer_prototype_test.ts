@@ -30,10 +30,11 @@ describe('transformer prototype', () => {
 function classAnnotation(t: any) { return t; }
 
     @classAnnotation
+    @classAnnotation
     class foo {}`, variableTypingTransformer.transformer);
 
     console.log(js);
-    // sourceMapTextToConsumer(sourceMap).eachMapping((m) => console.log(JSON.stringify(m)));
+    sourceMapTextToConsumer(sourceMap).eachMapping((m) => console.log(JSON.stringify(m)));
 
     expect(js).to.exist;
   });
