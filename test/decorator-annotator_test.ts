@@ -27,10 +27,12 @@ function sources(sourceText: string): Map<string, string> {
     [testCaseFileName, sourceText],
     // Provides a rename of any 'FakeDecorator' that we can use as an annotator
     // without the compiler complaining we didn't actually provide a value
-    ['bar.d.ts', `declare module "bar" {
+    [
+      'bar.d.ts', `declare module "bar" {
       export class BarService {}
       type FakeDecorator = any;
-    }`]
+    }`
+    ]
   ]);
   return sources;
 }
