@@ -37,7 +37,7 @@ function sources(sourceText: string): Map<string, string> {
   return sources;
 }
 
-describe.only('decorator-annotator', () => {
+describe('decorator-annotator', () => {
   function translate(sourceText: string, allowErrors = false) {
     const {host, program} = createProgramAndHost(sources(sourceText), compilerOptions);
     if (!allowErrors) {
