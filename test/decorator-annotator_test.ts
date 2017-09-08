@@ -17,7 +17,7 @@ import {convertDecorators} from '../src/decorator-annotator';
 import {DefaultSourceMapper} from '../src/source_map_utils';
 import * as tsickle from '../src/tsickle';
 
-import {generateAstPrintingTransform} from './ast_printing_transform';
+import {createAstPrintingTransform} from './ast_printing_transform';
 import {compilerOptions, createProgram, createProgramAndHost} from './test_support';
 
 const testCaseFileName = 'testcase.ts';
@@ -25,17 +25,22 @@ const testCaseFileName = 'testcase.ts';
 function sources(sourceText: string): Map<string, string> {
   const sources = new Map<string, string>([
     [testCaseFileName, sourceText],
-    ['bar.d.ts', 'declare module "bar" { export class BarService {} }']
+    // Provides a rename of any 'FakeDecorator' that we can use as an annotator
+    // without the compiler complaining we didn't actually provide a value
+    ['bar.d.ts', `declare module "bar" {
+      export class BarService {}
+      type FakeDecorator = any;
+    }`]
   ]);
   return sources;
 }
 
-describe('decorator-annotator', () => {
+describe.only('decorator-annotator', () => {
   function translate(sourceText: string, allowErrors = false) {
     const {host, program} = createProgramAndHost(sources(sourceText), compilerOptions);
     if (!allowErrors) {
-      expect(ts.getPreEmitDiagnostics(program))
-          .lengthOf(0, tsickle.formatDiagnostics(ts.getPreEmitDiagnostics(program)));
+      const diagnostics = ts.getPreEmitDiagnostics(program);
+      expect(diagnostics, tsickle.formatDiagnostics(ts.getPreEmitDiagnostics(program))).to.be.empty;
     }
 
     const transformerHost: tsickle.TsickleHost = {
@@ -52,7 +57,7 @@ describe('decorator-annotator', () => {
     const files = new Map<string, string>();
     const {diagnostics} = tsickle.emitWithTsickle(
         program, transformerHost, host, compilerOptions, undefined, (path, contents) => {},
-        undefined, undefined, {beforeTs: [generateAstPrintingTransform(files)]});
+        undefined, undefined, {beforeTs: [createAstPrintingTransform(files)]});
 
     if (!allowErrors) {
       // tslint:disable-next-line:no-unused-expression
@@ -72,10 +77,10 @@ describe('decorator-annotator', () => {
   }
 
   function expectUnchanged(sourceText: string) {
-    expectEqual(sourceText, sourceText);
+    expectTranslatedToEqual(sourceText, sourceText);
   }
 
-  function expectEqual(sourceText: string, expected: string) {
+  function expectTranslatedToEqual(sourceText: string, expected: string) {
     expect(normalizeQuotes(translate(sourceText).output))
         .to.equal(normalizeQuotes(prettyPrint(expected)));
   }
@@ -95,17 +100,19 @@ describe('decorator-annotator', () => {
     });
 
     it('transforms decorated classes', () => {
-      expectEqual(`
-/** @Annotation */ let Test1: any;
-/** @Annotation */ let Test2: any;
+      expectTranslatedToEqual(`
+import {FakeDecorator} from 'bar';
+/** @Annotation */ let Test1: FakeDecorator;
+/** @Annotation */ let Test2: FakeDecorator;
 let param: any;
 @Test1
 @Test2(param)
 class Foo {
   field: string;
 }`, `
-/** @Annotation */ let Test1: any;
-/** @Annotation */ let Test2: any;
+import {FakeDecorator} from 'bar';
+/** @Annotation */ let Test1: FakeDecorator;
+/** @Annotation */ let Test2: FakeDecorator;
 let param: any;
 
 
@@ -122,7 +129,7 @@ static ctorParameters: () => ({type: any, decorators?: {type: Function, args?: a
     });
 
     it('transforms decorated classes with function expression annotation declaration', () => {
-      expectEqual(`
+      expectTranslatedToEqual(`
 /** @Annotation */ function Test(t: any) {};
 @Test
 class Foo {
@@ -142,13 +149,15 @@ static ctorParameters: () => ({type: any, decorators?: {type: Function, args?: a
     });
 
     it('transforms decorated classes with an exported annotation declaration', () => {
-      expectEqual(`
-/** @Annotation */ export let Test: any;
+      expectTranslatedToEqual(`
+import {FakeDecorator} from 'bar';
+/** @Annotation */ export let Test: FakeDecorator;
 @Test
 class Foo {
   field: string;
 }`, `
-/** @Annotation */ export let Test: any;
+import {FakeDecorator} from 'bar';
+/** @Annotation */ export let Test: FakeDecorator;
 
 class Foo {
   field: string;
@@ -162,10 +171,11 @@ static ctorParameters: () => ({type: any, decorators?: {type: Function, args?: a
     });
 
     it('accepts various complicated decorators', () => {
-      expectEqual(`
-/** @Annotation */ let Test1: any;
-/** @Annotation */ let Test2: any;
-/** @Annotation */ let Test3: any;
+      expectTranslatedToEqual(`
+import {FakeDecorator} from 'bar';
+/** @Annotation */ let Test1: FakeDecorator;
+/** @Annotation */ let Test2: FakeDecorator;
+/** @Annotation */ let Test3: FakeDecorator;
 /** @Annotation */ function Test4<T>(param: any): ClassDecorator { return null as any; }
 let param: any;
 @Test1({name: 'percentPipe'}, class ZZZ {})
@@ -174,9 +184,10 @@ let param: any;
 @Test4<string>(param)
 class Foo {
 }`, `
-/** @Annotation */ let Test1: any;
-/** @Annotation */ let Test2: any;
-/** @Annotation */ let Test3: any;
+import {FakeDecorator} from 'bar';
+/** @Annotation */ let Test1: FakeDecorator;
+/** @Annotation */ let Test2: FakeDecorator;
+/** @Annotation */ let Test3: FakeDecorator;
 /** @Annotation */ function Test4<T>(param: any): ClassDecorator { return null as any; }
 let param: any;
 
@@ -197,12 +208,14 @@ static ctorParameters: () => ({type: any, decorators?: {type: Function, args?: a
     });
 
     it(`doesn't eat 'export'`, () => {
-      expectEqual(`
-/** @Annotation */ let Test1: any;
+      expectTranslatedToEqual(`
+import {FakeDecorator} from 'bar';
+/** @Annotation */ let Test1: FakeDecorator;
 @Test1
 export class Foo {
 }`, `
-/** @Annotation */ let Test1: any;
+import {FakeDecorator} from 'bar';
+/** @Annotation */ let Test1: FakeDecorator;
 
 export class Foo {
 static decorators: {type: Function, args?: any[]}[] = [
@@ -215,9 +228,10 @@ static ctorParameters: () => ({type: any, decorators?: {type: Function, args?: a
     });
 
     it(`handles nested classes`, () => {
-      expectEqual(`
-/** @Annotation */ let Test1: any;
-/** @Annotation */ let Test2: any;
+      expectTranslatedToEqual(`
+import {FakeDecorator} from 'bar';
+/** @Annotation */ let Test1: FakeDecorator;
+/** @Annotation */ let Test2: FakeDecorator;
 @Test1
 export class Foo {
   foo() {
@@ -226,8 +240,9 @@ export class Foo {
     }
   }
 }`, `
-/** @Annotation */ let Test1: any;
-/** @Annotation */ let Test2: any;
+import {FakeDecorator} from 'bar';
+/** @Annotation */ let Test1: FakeDecorator;
+/** @Annotation */ let Test2: FakeDecorator;
 
 export class Foo {
   foo() {
@@ -261,7 +276,7 @@ class Foo {
     });
 
     it('transforms injected ctors', () => {
-      expectEqual(`
+      expectTranslatedToEqual(`
 /** @Annotation */ let Inject: Function;
 enum AnEnum { ONE, TWO, };
 abstract class AbstractService {}
@@ -284,16 +299,16 @@ static ctorParameters: () => ({type: any, decorators?: {type: Function, args?: a
     });
 
     it('stores non annotated parameters if the class has at least one decorator', () => {
-      expectEqual(`
-import {BarService} from 'bar';
-/** @Annotation */ let Test1: any;
+      expectTranslatedToEqual(`
+import {BarService, FakeDecorator} from 'bar';
+/** @Annotation */ let Test1: FakeDecorator;
 @Test1()
 class Foo {
   constructor(bar: BarService, num: number) {
   }
 }`, `
-import {BarService} from 'bar';
-/** @Annotation */ let Test1: any;
+import {BarService, FakeDecorator} from 'bar';
+/** @Annotation */ let Test1: FakeDecorator;
 
 class Foo {
   constructor(bar: BarService, num: number) {
@@ -310,7 +325,7 @@ null,
     });
 
     it('handles complex ctor parameters', () => {
-      expectEqual(`
+      expectTranslatedToEqual(`
 import * as bar from 'bar';
 /** @Annotation */ let Inject: Function;
 let param: any;
@@ -335,7 +350,7 @@ null,
     });
 
     it('includes decorators for primitive type ctor parameters', () => {
-      expectEqual(`
+      expectTranslatedToEqual(`
 /** @Annotation */ let Inject: Function;
 let APP_ID: any;
 class ViewUtils {
@@ -353,7 +368,7 @@ static ctorParameters: () => ({type: any, decorators?: {type: Function, args?: a
     });
 
     it('strips generic type arguments', () => {
-      expectEqual(`
+      expectTranslatedToEqual(`
 /** @Annotation */ let Inject: Function;
 class Foo {
   constructor(@Inject typed: Promise<string>) {
@@ -371,7 +386,7 @@ static ctorParameters: () => ({type: any, decorators?: {type: Function, args?: a
     });
 
     it('avoids using interfaces as values', () => {
-      expectEqual(`
+      expectTranslatedToEqual(`
 /** @Annotation */ let Inject: Function = (null as any);
 class Class {}
 interface Iface {}
@@ -401,7 +416,7 @@ class Foo {
     });
 
     it('gathers decorators from methods', () => {
-      expectEqual(`
+      expectTranslatedToEqual(`
 /** @Annotation */ let Test1: Function;
 class Foo {
   @Test1('somename')
@@ -417,7 +432,7 @@ static propDecorators: {[key: string]: {type: Function, args?: any[]}[]} = {
     });
 
     it('gathers decorators from fields and setters', () => {
-      expectEqual(`
+      expectTranslatedToEqual(`
 /** @Annotation */ let PropDecorator: Function;
 class ClassWithDecorators {
   @PropDecorator("p1") @PropDecorator("p2") a;
@@ -453,7 +468,7 @@ class Foo {
               'Error at testcase.ts:5:3: cannot process decorators on strangely named method');
     });
     it('avoids mangling code relying on ASI', () => {
-      expectEqual(`
+      expectTranslatedToEqual(`
 /** @Annotation */ let PropDecorator: Function;
 class Foo {
   missingSemi = () => {}
