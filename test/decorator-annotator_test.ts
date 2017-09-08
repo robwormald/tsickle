@@ -37,7 +37,7 @@ function sources(sourceText: string): Map<string, string> {
   return sources;
 }
 
-describe.only('decorator-annotator', () => {
+describe('decorator-annotator', () => {
   function translate(sourceText: string, allowErrors = false) {
     const {host, program} = createProgramAndHost(sources(sourceText), compilerOptions);
     if (!allowErrors) {
@@ -70,11 +70,11 @@ describe.only('decorator-annotator', () => {
   }
 
   function expectUnchanged(sourceText: string) {
-    expectTranslatedToEqual(sourceText, sourceText);
+    expectTranslated(sourceText).to.equal(sourceText);
   }
 
-  function expectTranslatedToEqual(sourceText: string, expected: string) {
-    expect(translate(sourceText).output).to.equal(expected);
+  function expectTranslated(sourceText: string) {
+    return expect(translate(sourceText).output);
   }
 
   describe('class decorator rewriter', () => {
@@ -98,7 +98,7 @@ class Foo {
     });
 
     it('transforms decorated classes', () => {
-      expectTranslatedToEqual(`
+      expectTranslated(`
 import {FakeDecorator} from 'bar';
 /** @Annotation */ let Test1: FakeDecorator;
 /** @Annotation */ let Test2: FakeDecorator;
@@ -107,7 +107,7 @@ let param: any;
 @Test2(param)
 class Foo {
   field: string;
-}`, `import { FakeDecorator } from 'bar';
+}`).to.equal(`import { FakeDecorator } from 'bar';
 /** @Annotation */ let Test1: FakeDecorator;
 /** @Annotation */ let Test2: FakeDecorator;
 let param: any;
@@ -133,12 +133,12 @@ class Foo {
     });
 
     it('transforms decorated classes with function expression annotation declaration', () => {
-      expectTranslatedToEqual(`
+      expectTranslated(`
 /** @Annotation */ function Test(t: any) {};
 @Test
 class Foo {
   field: string;
-}`, `/** @Annotation */ function Test(t: any) { }
+}`).to.equal(`/** @Annotation */ function Test(t: any) { }
 ;
 class Foo {
     field: string;
@@ -161,13 +161,13 @@ class Foo {
     });
 
     it('transforms decorated classes with an exported annotation declaration', () => {
-      expectTranslatedToEqual(`
+      expectTranslated(`
 import {FakeDecorator} from 'bar';
 /** @Annotation */ export let Test: FakeDecorator;
 @Test
 class Foo {
   field: string;
-}`, `import { FakeDecorator } from 'bar';
+}`).to.equal(`import { FakeDecorator } from 'bar';
 /** @Annotation */ export let Test: FakeDecorator;
 class Foo {
     field: string;
@@ -190,7 +190,7 @@ class Foo {
     });
 
     it('accepts various complicated decorators', () => {
-      expectTranslatedToEqual(`
+      expectTranslated(`
 import {FakeDecorator} from 'bar';
 /** @Annotation */ let Test1: FakeDecorator;
 /** @Annotation */ let Test2: FakeDecorator;
@@ -202,7 +202,7 @@ let param: any;
 @Test3()
 @Test4<string>(param)
 class Foo {
-}`, `import { FakeDecorator } from 'bar';
+}`).to.equal(`import { FakeDecorator } from 'bar';
 /** @Annotation */ let Test1: FakeDecorator;
 /** @Annotation */ let Test2: FakeDecorator;
 /** @Annotation */ let Test3: FakeDecorator;
@@ -232,12 +232,12 @@ class Foo {
     });
 
     it(`doesn't eat 'export'`, () => {
-      expectTranslatedToEqual(`
+      expectTranslated(`
 import {FakeDecorator} from 'bar';
 /** @Annotation */ let Test1: FakeDecorator;
 @Test1
 export class Foo {
-}`, `import { FakeDecorator } from 'bar';
+}`).to.equal(`import { FakeDecorator } from 'bar';
 /** @Annotation */ let Test1: FakeDecorator;
 export class Foo {
     static decorators: {
@@ -259,7 +259,7 @@ export class Foo {
     });
 
     it(`handles nested classes`, () => {
-      expectTranslatedToEqual(`
+      expectTranslated(`
 import {FakeDecorator} from 'bar';
 /** @Annotation */ let Test1: FakeDecorator;
 /** @Annotation */ let Test2: FakeDecorator;
@@ -270,7 +270,7 @@ export class Foo {
     class Bar {
     }
   }
-}`, `import { FakeDecorator } from 'bar';
+}`).to.equal(`import { FakeDecorator } from 'bar';
 /** @Annotation */ let Test1: FakeDecorator;
 /** @Annotation */ let Test2: FakeDecorator;
 export class Foo {
@@ -322,14 +322,14 @@ class Foo {
     });
 
     it('transforms injected ctors', () => {
-      expectTranslatedToEqual(`
+      expectTranslated(`
 /** @Annotation */ let Inject: Function;
 enum AnEnum { ONE, TWO, };
 abstract class AbstractService {}
 class Foo {
   constructor(@Inject bar: AbstractService, @Inject('enum') num: AnEnum) {
   }
-}`, `/** @Annotation */ let Inject: Function;
+}`).to.equal(`/** @Annotation */ let Inject: Function;
 enum AnEnum {
     ONE,
     TWO
@@ -356,14 +356,14 @@ class Foo {
     });
 
     it('stores non annotated parameters if the class has at least one decorator', () => {
-      expectTranslatedToEqual(`
+      expectTranslated(`
 import {BarService, FakeDecorator} from 'bar';
 /** @Annotation */ let Test1: FakeDecorator;
 @Test1()
 class Foo {
   constructor(bar: BarService, num: number) {
   }
-}`, `import { BarService, FakeDecorator } from 'bar';
+}`).to.equal(`import { BarService, FakeDecorator } from 'bar';
 /** @Annotation */ let Test1: FakeDecorator;
 class Foo {
     constructor(bar: BarService, num: number) {
@@ -390,14 +390,14 @@ class Foo {
     });
 
     it('handles complex ctor parameters', () => {
-      expectTranslatedToEqual(`
+      expectTranslated(`
 import * as bar from 'bar';
 /** @Annotation */ let Inject: Function;
 let param: any;
 class Foo {
   constructor(@Inject(param) x: bar.BarService, {a, b}, defArg = 3, optional?: bar.BarService) {
   }
-}`, `import * as bar from 'bar';
+}`).to.equal(`import * as bar from 'bar';
 /** @Annotation */ let Inject: Function;
 let param: any;
 class Foo {
@@ -421,12 +421,12 @@ class Foo {
     });
 
     it('includes decorators for primitive type ctor parameters', () => {
-      expectTranslatedToEqual(`
+      expectTranslated(`
 /** @Annotation */ let Inject: Function;
 let APP_ID: any;
 class ViewUtils {
   constructor(@Inject(APP_ID) private _appId: string) {}
-}`, `/** @Annotation */ let Inject: Function;
+}`).to.equal(`/** @Annotation */ let Inject: Function;
 let APP_ID: any;
 class ViewUtils {
     constructor(private _appId: string) { }
@@ -445,12 +445,12 @@ class ViewUtils {
     });
 
     it('strips generic type arguments', () => {
-      expectTranslatedToEqual(`
+      expectTranslated(`
 /** @Annotation */ let Inject: Function;
 class Foo {
   constructor(@Inject typed: Promise<string>) {
   }
-}`, `/** @Annotation */ let Inject: Function;
+}`).to.equal(`/** @Annotation */ let Inject: Function;
 class Foo {
     constructor(typed: Promise<string>) {
     }
@@ -469,13 +469,13 @@ class Foo {
     });
 
     it('avoids using interfaces as values', () => {
-      expectTranslatedToEqual(`
+      expectTranslated(`
 /** @Annotation */ let Inject: Function = (null as any);
 class Class {}
 interface Iface {}
 class Foo {
   constructor(@Inject aClass: Class, @Inject aIface: Iface) {}
-}`, `/** @Annotation */ let Inject: Function = (null as any);
+}`).to.equal(`/** @Annotation */ let Inject: Function = (null as any);
 class Class {
 }
 interface Iface {
@@ -507,12 +507,12 @@ class Foo {
     });
 
     it('gathers decorators from methods', () => {
-      expectTranslatedToEqual(`
+      expectTranslated(`
 /** @Annotation */ let Test1: Function;
 class Foo {
   @Test1('somename')
   bar() {}
-}`, `/** @Annotation */ let Test1: Function;
+}`).to.equal(`/** @Annotation */ let Test1: Function;
 class Foo {
     bar() { }
     static propDecorators: {
@@ -528,7 +528,7 @@ class Foo {
     });
 
     it('gathers decorators from fields and setters', () => {
-      expectTranslatedToEqual(`
+      expectTranslated(`
 /** @Annotation */ let PropDecorator: Function;
 class ClassWithDecorators {
   @PropDecorator("p1") @PropDecorator("p2") a;
@@ -536,7 +536,7 @@ class ClassWithDecorators {
 
   @PropDecorator("p3")
   set c(value) {}
-}`, `/** @Annotation */ let PropDecorator: Function;
+}`).to.equal(`/** @Annotation */ let PropDecorator: Function;
 class ClassWithDecorators {
     a;
     b;
@@ -568,12 +568,12 @@ class Foo {
               'Error at testcase.ts:5:3: cannot process decorators on strangely named method');
     });
     it('avoids mangling code relying on ASI', () => {
-      expectTranslatedToEqual(`
+      expectTranslated(`
 /** @Annotation */ let PropDecorator: Function;
 class Foo {
   missingSemi = () => {}
   @PropDecorator other: number;
-}`, `/** @Annotation */ let PropDecorator: Function;
+}`).to.equal(`/** @Annotation */ let PropDecorator: Function;
 class Foo {
     missingSemi = () => { };
     other: number;
