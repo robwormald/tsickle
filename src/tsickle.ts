@@ -10,6 +10,7 @@ import * as path from 'path';
 import {RawSourceMap, SourceMapConsumer, SourceMapGenerator} from 'source-map';
 import * as ts from 'typescript';
 
+import {transformer as classDecoratorDownlevelTransformer} from './class_decorator_downlevel_transformer';
 import * as decorator from './decorator-annotator';
 import {hasExportingDecorator} from './decorators';
 import * as es5processor from './es5processor';
@@ -2005,6 +2006,7 @@ export function emitWithTsickle(
     before: [
       ...(customTransformers.beforeTsickle || []),
       ...(tsickleTransformers.before || []).map(tf => skipTransformForSourceFileIfNeeded(host, tf)),
+      classDecoratorDownlevelTransformer(typeChecker),
       ...(customTransformers.beforeTs || []),
     ],
     after: [

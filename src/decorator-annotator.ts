@@ -52,8 +52,8 @@ export class DecoratorClassVisitor {
   /**
    * Determines whether the given decorator should be re-written as an annotation.
    */
-  private shouldLower(decorator: ts.Decorator) {
-    for (const d of getDecoratorDeclarations(decorator, this.typeChecker)) {
+  public static shouldLower(decorator: ts.Decorator, typeChecker: ts.TypeChecker) {
+    for (const d of getDecoratorDeclarations(decorator, typeChecker)) {
       // Switch to the TS JSDoc parser in the future to avoid false positives here.
       // For example using '@Annotation' in a true comment.
       // However, a new TS API would be needed, track at
@@ -84,7 +84,7 @@ export class DecoratorClassVisitor {
 
   private decoratorsToLower(n: ts.Node): ts.Decorator[] {
     if (n.decorators) {
-      return n.decorators.filter((d) => this.shouldLower(d));
+      return n.decorators.filter((d) => DecoratorClassVisitor.shouldLower(d, this.typeChecker));
     }
     return [];
   }
@@ -190,15 +190,16 @@ export class DecoratorClassVisitor {
   }
 
   maybeProcessDecorator(node: ts.Decorator, start?: number): boolean {
-    if (this.shouldLower(node)) {
-      // Return true to signal that this node should not be emitted,
-      // but still emit the whitespace *before* the node.
-      if (!start) {
-        start = node.getFullStart();
-      }
-      this.rewriter.writeRange(node, start, node.getStart());
-      return true;
-    }
+    // if (this.shouldLower(node)) {
+    //   console.log('lowering a decorator, I guess?');
+    //   // Return true to signal that this node should not be emitted,
+    //   // but still emit the whitespace *before* the node.
+    //   if (!start) {
+    //     start = node.getFullStart();
+    //   }
+    //   this.rewriter.writeRange(node, start, node.getStart());
+    // }
+    // console.log('not lowering a decorator, I guess?');
     return false;
   }
 
@@ -238,12 +239,12 @@ export class DecoratorClassVisitor {
   emitMetadataAsStaticProperties() {
     const decoratorInvocations = '{type: Function, args?: any[]}[]';
     if (this.decorators) {
-      this.rewriter.emit(`static decorators: ${decoratorInvocations} = [\n`);
-      for (const annotation of this.decorators) {
-        this.emitDecorator(annotation);
-        this.rewriter.emit(',\n');
-      }
-      this.rewriter.emit('];\n');
+      // this.rewriter.emit(`static decorators: ${decoratorInvocations} = [\n`);
+      // for (const annotation of this.decorators) {
+      //   this.emitDecorator(annotation);
+      //   this.rewriter.emit(',\n');
+      // }
+      // this.rewriter.emit('];\n');
     }
 
     if (this.decorators || this.ctorParameters) {
