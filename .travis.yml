@@ -1,17 +1,13 @@
 language: node_js
 sudo: required
 
-services:
-  - docker
-
-before_install:
-  - docker pull angular/ngcontainer
-  - docker run angular/ngcontainer /bin/sh -c "yarn test"
 node_js:
   - "6"
 cache:
   yarn: true
   directories:
     - node_modules
+install:
+  - install.sh
 script:
   - yarn test
