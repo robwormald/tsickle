@@ -2,11 +2,11 @@ language: node_js
 sudo: required
 
 services:
-  - docker pull angular/ngcontainer
-  - docker run angular/ngcontainer
+  - docker
 
 before_install:
-  - docker
+  - docker pull angular/ngcontainer
+  - docker run angular/ngcontainer
 node_js:
   - "6"
 cache:
