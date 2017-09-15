@@ -9,6 +9,5 @@ cache:
     - node_modules
 install:
   - ./install.sh
-  - yarn
 script:
   - yarn test
