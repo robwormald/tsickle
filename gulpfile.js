@@ -19,6 +19,7 @@ var sourcemaps = require('gulp-sourcemaps');
 var ts = require('gulp-typescript');
 var tslint = require('gulp-tslint');
 var typescript = require('typescript');
+var child = require('child_process');
 
 var tsProject = ts.createProject('tsconfig.json', {
   // Specify the TypeScript version we're using.
@@ -56,17 +57,25 @@ var onError = function(err) {
   }
 };
 
-gulp.task('compile', function() {
+gulp.task('compile', function(done) {
   hasError = false;
-  var tsResult =
-      gulp.src(['src/**/*.ts']).pipe(sourcemaps.init()).pipe(tsProject()).on('error', onError);
-  return merge([
-    tsResult.dts.pipe(gulp.dest('built/definitions')),
-    // Write external sourcemap next to the js file
-    tsResult.js.pipe(sourcemaps.write('.', {includeContent: false, sourceRoot: '../../src'}))
-        .pipe(gulp.dest('built/src')),
-    tsResult.js.pipe(gulp.dest('built/src')),
-  ]);
+  const processHandle = child.spawn('bazel', ['build', 'src'], {encoding: 'utf8'});
+  let stderr = '';
+  processHandle.stderr.setEncoding('utf8');
+  processHandle.stderr.on('data', (data) => {
+    stderr += data;
+  });
+  processHandle.on('exit', (code, signal) => {
+    if (code !== 0) {
+      gutil.log(stderr);
+      onError();
+      done();
+      return;
+    }
+    gulp.src(['bazel-bin/src/*'])
+        .pipe(gulp.dest('built/src', {mode: '0644'}))
+        .on('end', () => done());
+  });
 });
 
 gulp.task('test.compile', ['compile'], function(done) {
@@ -74,12 +83,23 @@ gulp.task('test.compile', ['compile'], function(done) {
     done();
     return;
   }
-  return gulp.src(['test/*.ts'], {base: '.'})
-      .pipe(sourcemaps.init())
-      .pipe(tsProject())
-      .on('error', onError)
-      .js.pipe(sourcemaps.write('.', {includeContent: false, sourceRoot: '../../test'}))
-      .pipe(gulp.dest('built/'));
+  const processHandle = child.spawn('bazel', ['build', 'test'], {encoding: 'utf8'});
+  let stderr = '';
+  processHandle.stderr.setEncoding('utf8');
+  processHandle.stderr.on('data', (data) => {
+    stderr += data;
+  });
+  processHandle.on('exit', (code, signal) => {
+    if (code !== 0) {
+      gutil.log(stderr);
+      onError();
+      done();
+      return;
+    }
+    gulp.src(['bazel-bin/test/*'])
+        .pipe(gulp.dest('built/test', {mode: '0644'}))
+        .on('end', () => done());
+  });
 });
 
 gulp.task('test.unit', ['test.compile'], function(done) {
