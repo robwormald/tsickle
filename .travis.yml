@@ -6,7 +6,7 @@ services:
 
 before_install:
   - docker pull angular/ngcontainer
-  - docker run angular/ngcontainer
+  - docker run angular/ngcontainer /bin/sh -c "yarn test"
 node_js:
   - "6"
 cache:
