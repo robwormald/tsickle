@@ -1,5 +1,12 @@
 language: node_js
-sudo: false
+sudo: required
+
+services:
+  - docker pull angular/ngcontainer
+  - docker run angular/ngcontainer
+
+before_install:
+  - docker
 node_js:
   - "6"
 cache:
