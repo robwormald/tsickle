@@ -9,5 +9,6 @@ cache:
     - node_modules
 install:
   - ./install.sh
+  - bazel version
 script:
   - yarn test
