@@ -1,9 +1,14 @@
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
-git_repository(
+#git_repository(
+#    name = "build_bazel_rules_nodejs",
+#    remote = "https://github.com/alexeagle/rules_nodejs.git",
+#    commit = "e6298c7",
+#)
+
+local_repository(
     name = "build_bazel_rules_nodejs",
-    remote = "https://github.com/bazelbuild/rules_nodejs.git",
-    tag = "0.1.0",
+    path = "../rules_nodejs",
 )
 
 load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories")
